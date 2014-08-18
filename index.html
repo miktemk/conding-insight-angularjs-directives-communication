@@ -1,0 +1,221 @@
+<!doctype html>
+<html >
+<head>
+
+  <title>Directive Test</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="css/mystyle.css" />
+    <script type="text/javascript" src="jquery.min.js" ></script>
+    <script type="text/javascript" src="angular.min.js"></script>
+    <script type="text/javascript" src="direxxx.js"></script>
+</head>
+<body ng-app>
+<!--[if lte IE 7]>
+<p>Sorry, it seems your browser is too old for this cool content. Please use a newer browser, such as <a href="http://www.microsoft.com/canada/windows/internet-explorer/oie9/default.aspx">IE9</a>, <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a> or <a href="http://www.mozilla.org/en-US/firefox/new/">Firefox</a>!</p>
+<![endif]-->
+
+<div class="container">
+
+<p>NOTE: This document is best opened with <i>Firefox</i>, since Chrome usually prevents from loading
+template files via the $http module</p>
+
+<h1>Require option</h1>
+
+<h3>Same level</h3>
+
+<p>Directive <code>directive-requires-elem-main</code> will not work unless <code>bullshitButton</code>
+directive is present within the same element.</p>
+
+<pre>
+angular.module('ng').directive('bullshitButtonSetText', function() {
+    return {
+        ...
+        require: 'bullshitButton',
+        ...
+
+&lt;bullshit-button
+    bullshit-button-set-text
+    bullshit-button-set-class="warning"
+    bullshit-button-increment-bond-kills
+    class="blahblah"
+/&gt;
+</pre>
+
+<bullshit-button
+    bullshit-button-set-text
+    bullshit-button-set-class="warning"
+    bullshit-button-increment-bond-kills
+    class="blahblah"
+></bullshit-button>
+
+<h3>Multi-level (with ^)</h3>
+
+<p>If the child directive will find itself underneath the element it requires you need to use a hat! (^)</p>
+
+<pre>
+angular.module('ng').directive('myPane', function() {
+    return {
+        ...
+        require: '^myTabs',
+        ...
+
+&lt;my-tabs&gt;
+  &lt;my-pane title=&quot;Hello&quot;&gt;
+    &lt;h4&gt;Hello&lt;/h4&gt;
+    &lt;p&gt;Lorem ipsum dolor sit amet&lt;/p&gt;
+  &lt;/my-pane&gt;
+  &lt;my-pane title=&quot;World&quot;&gt;
+    &lt;h4&gt;World&lt;/h4&gt;
+    &lt;em&gt;Mauris elementum elementum enim at suscipit.&lt;/em&gt;
+    &lt;p&gt;&lt;a href ng-click=&quot;i = i + 1&quot;&gt;counter: {{i || 0}}&lt;/a&gt;&lt;/p&gt;
+  &lt;/my-pane&gt;
+&lt;/my-tabs&gt;
+</pre>
+
+<my-tabs>
+  <my-pane title="Hello">
+    <h4>Hello</h4>
+    <p>Lorem ipsum dolor sit amet</p>
+  </my-pane>
+  <my-pane title="World">
+    <h4>World</h4>
+    <em>Mauris elementum elementum enim at suscipit.</em>
+    <p><a href ng-click="i = i + 1">counter: {{i || 0}}</a></p>
+  </my-pane>
+</my-tabs>
+
+<h1>Through a service</h1>
+<pre>
+// first we create a factory, or service... call it whatever you want
+angular.module('ng').factory('myOwnServiceGodILoveDependencyInjection', ['$rootScope', function ($rootScope) {
+    function MySharedObj() {
+        var self = this;
+        self.listeners = [];
+        self.register = function (who) {
+            self.listeners.push(who);
+        };
+        self.fart = function () {
+            $.each(self.listeners, function (i, x) {
+                x.farted();
+            });
+        };
+        ...
+    }
+    return new MySharedObj();
+}]);
+// these are listening directives, so they need to register with our service
+angular.module('ng').directive('collectorOfBurps', ['myOwnServiceGodILoveDependencyInjection', function(myOwnServiceGodILoveDependencyInjection) {
+    return {
+        ...
+        link: function(scope, element, attrs) {
+            myOwnServiceGodILoveDependencyInjection.register({
+                burped: function () { ... },
+                farted: function () { ... }
+            });
+            ...
+        }
+    };
+}]);
+// and this directive will pull the strings on the service, invoking something in the listeners
+angular.module('ng').directive('grossBoyHeCanBurpAndFart', ['myOwnServiceGodILoveDependencyInjection', function(myOwnServiceGodILoveDependencyInjection) {
+    return {
+        ...
+        link: function(scope, element, attrs) {
+            ...
+            myOwnServiceGodILoveDependencyInjection.burp();
+            ...
+        }
+    };
+}]);
+</pre>
+
+<p>So the the following 3 are all separate directives,
+yet they still communicate through the service</p>
+
+<pre>
+&lt;li&gt;&lt;div gross-boy-he-can-burp-and-fart&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;&lt;div collector-of-burps&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;li&gt;&lt;div collector-of-farts&gt;&lt;/div&gt;&lt;/li&gt;
+</pre>
+
+<ul>
+	<li><div gross-boy-he-can-burp-and-fart></div></li>
+	<li><div collector-of-burps></div></li>
+	<li><div collector-of-farts></div></li>
+</ul>
+
+<h1>$broadcast/$emit</h1>
+
+<pre>
+angular.module('ng').directive('broadcastTestChild1', function($rootScope) {
+    return {
+        template: ' ... &lt;broadcast-test-child-2&gt;&lt;/broadcast-test-child-2&gt; ... ',
+        scope: {},  // must have this to have isolate scope,
+                    // otherwise this and broadcast-test-child-2's scopes will be the same scope
+        link: function(scope, element, attrs) {
+            ...
+            scope.$broadcast('broadcastTestMessage', message);
+            ...
+            scope.$emit('broadcastTestMessage', message);
+            ...
+            $rootScope.$broadcast('broadcastTestMessage', message);
+            ...
+            // listen for messages
+            var unreg1 = scope.$on('broadcastTestMessage', function (event, message) {
+                $rootScope.$broadcast('simple-console-log', "child-level-1 received message: " + message);
+            });
+            // dont forget to unregister all the $on's
+            var unreg2 = scope.$on('$destroy', function () {
+                unreg1();
+                unreg2();
+            });
+        }
+    };
+});
+// same as above, except no nested directive
+angular.module('ng').directive('broadcastTestChild2', function($rootScope) { ... });
+// global receiver
+angular.module('ng').directive('simpleConsole', function() {
+    return {
+        link: function(scope, element, attrs) {
+            // note that everyone can hear the $rootScope broadcasts
+            var unreg1 = scope.$on('simple-console-log', function (event, text) {
+                ...
+            });
+            ...
+        }
+    };
+});
+</pre>
+
+<pre>
+&lt;broadcast-test title=&quot;parent&quot;&gt;
+    &lt;broadcast-test-child-1&gt;
+    &lt;/broadcast-test-child-1&gt;
+&lt;/broadcast-test&gt;
+</pre>
+
+<p>NOTE: In order to understand if $broadcast/$emit do what you want them to do you must
+first understand your scope hierarchy. Here we have the following: (Note that due to
+transclusion in broadcast-test directive child-level-1 does not become the child of the parent,
+but is rather adopted by another scope, 00B. Transclusion will isolate your child scope,
+orphaning it in the process. The benefit is independence and FREEDOM! YEay!)
+</p>
+
+<p><img src="scopeshierarchy.jpg" /></p>
+
+<div class="row">
+	<div class="col-sm-6">
+		<broadcast-test title="parent">
+			<broadcast-test-child-1>
+			</broadcast-test-child-1>
+		</broadcast-test>
+	</div>
+	<div class="col-sm-6">
+		<simple-console></simple-console>
+	</div>
+</div>
+
+</div>
+</body>
+</html>
